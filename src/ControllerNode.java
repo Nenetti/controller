@@ -114,7 +114,6 @@ public class ControllerNode extends AbstractNodeMain{
 		    	   buttons[12]: PS button
 		    	   buttons[13]: Touchpad button
 				 */
-
 				float[] axes=message.getAxes();
 				//int[] buttons=message.getButtons();
 
