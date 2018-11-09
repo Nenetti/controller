@@ -1,23 +1,17 @@
-import javax.swing.JFrame;
 
-import org.ros.RosRun;
-import org.ros.message.MessageListener;
+import javax.swing.JFrame;
 import org.ros.namespace.GraphName;
-import org.ros.node.AbstractNodeMain;
-import org.ros.node.ConnectedNode;
-import org.ros.node.DefaultNodeMainExecutor;
 
 import geometry_msgs.Twist;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
-import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polygon;
 import javafx.scene.text.Font;
 import nav_msgs.Odometry;
 import ros.NodeHandle;
@@ -31,7 +25,6 @@ public class ControllerNode extends NodeHandle {
 	public static double angularVelocity=1;
 
 	private Publisher publisher;
-	private Odometry odometry;
 
 	private double linear;
 	private double angular;
@@ -46,6 +39,14 @@ public class ControllerNode extends NodeHandle {
 	Label linearLabel;
 	Label joy_status;
 	Label odom_status;
+	Polygon arrowW;
+	Polygon arrowA;
+	Polygon arrowS;
+	Polygon arrowD;
+	
+	private final static int width=200;
+	private final static int height=240;
+	private final static int arrowSize=20;
 
 	/******************************************************************************
 	 * 
@@ -62,48 +63,107 @@ public class ControllerNode extends NodeHandle {
 		JFrame frame=new JFrame("コントローラー");
 		JFXPanel panel=new JFXPanel();
 		frame.add(panel);
-		AnchorPane root=new AnchorPane();
-		root.setStyle("-fx-background-color: #000000;");
+		Group root=new Group();
 		Scene scene=new Scene(root);
+		scene.setFill(Color.BLACK);
 
 		angularLabel=new Label();
 		linearLabel=new Label();
 		joy_status=new Label();
 		odom_status=new Label();
-		setLabel(angularLabel, "0", Color.WHITE);
+		angularLabel.setFont(Font.font(15));
+		linearLabel.setFont(Font.font(15));
+		joy_status.setFont(Font.font(15));
+		odom_status.setFont(Font.font(15));
 		setLabel(linearLabel, "0", Color.WHITE);
-		setLabel(joy_status, "Not Connected Controller", Color.RED);
-		setLabel(odom_status, "Not received Odometry", Color.RED);
-
-		root.getChildren().addAll(angularLabel, linearLabel, joy_status, odom_status);
+		setLabel(angularLabel, "0", Color.WHITE);
+		setLabel(joy_status, "No Controller", Color.RED);
+		setLabel(odom_status, "No Odometry", Color.RED);
+		
+		linearLabel.relocate(0, width/2-20);
+		linearLabel.setMinWidth(width);
+		linearLabel.setAlignment(Pos.CENTER);
+		
+		angularLabel.relocate(0, width/2+20);
+		angularLabel.setMinWidth(width);
+		angularLabel.setAlignment(Pos.CENTER);
+		
+		joy_status.relocate(0, height-20);
+		joy_status.setMinWidth(width);
+		joy_status.setAlignment(Pos.CENTER);
+		
+		odom_status.relocate(0, height-40);
+		odom_status.setMinWidth(width);
+		odom_status.setAlignment(Pos.CENTER);
+		
+		
+		arrowW=new Polygon(arrowSize, 0, -arrowSize, 0 ,0, -arrowSize);
+		arrowA=new Polygon(0, arrowSize, 0, -arrowSize ,-arrowSize, 0);
+		arrowS=new Polygon(arrowSize, 0, -arrowSize, 0 ,0, arrowSize);
+		arrowD=new Polygon(0, arrowSize, 0, -arrowSize ,arrowSize, 0);
+		arrowW.relocate(width/2-arrowSize, width/2-arrowSize*4);
+		arrowW.setFill(Color.GRAY);
+		arrowA.relocate(width/2-arrowSize*4, width/2-arrowSize);
+		arrowA.setFill(Color.GRAY);
+		arrowS.relocate(width/2-arrowSize, width/2+arrowSize*3);
+		arrowS.setFill(Color.GRAY);
+		arrowD.relocate(width/2+arrowSize*3, width/2-arrowSize);
+		arrowD.setFill(Color.GRAY);
+		
+		
+		root.getChildren().addAll(angularLabel, linearLabel, joy_status, odom_status, arrowW, arrowA, arrowS, arrowD);
 		panel.setScene(scene);
-		frame.setBounds(0, 0, 110, 160);
+		frame.setBounds(0, 0, width, height);
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		scene.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
-			@Override
-			public void handle(KeyEvent event) {
-				switch (event.getCode()) {
-				case W:
-					linear=linearVelocity;
-					break;
-				case A:
-					angular=angularVelocity;
-					break;
-				case D:
-					angular=-angularVelocity;
-					break;
-				case S:
-					linear=-linearVelocity;
-					break;
-				case C:
-					System.exit(0);
-					break;
-				default:
-					break;
-				}
+		scene.addEventHandler(KeyEvent.KEY_PRESSED, (event)->{
+			switch (event.getCode()) {
+			case W:
+				linear=linearVelocity;
+				arrowW.setFill(Color.RED);
+				break;
+			case A:
+				angular=angularVelocity;
+				arrowA.setFill(Color.RED);
+				break;
+			case S:
+				linear=-linearVelocity;
+				arrowS.setFill(Color.RED);
+				break;
+			case D:
+				angular=-angularVelocity;
+				arrowD.setFill(Color.RED);
+				break;
+			case C:
+				System.exit(0);
+				break;
+			default:
+				break;
 			}
 		});
+		scene.addEventHandler(KeyEvent.KEY_RELEASED, (event)->{
+			switch (event.getCode()) {
+			case W:
+				linear=0;
+				arrowW.setFill(Color.GRAY);
+				break;
+			case A:
+				angular=0;
+				arrowA.setFill(Color.GRAY);
+				break;
+			case S:
+				linear=0;
+				arrowS.setFill(Color.GRAY);
+				break;
+			case D:
+				angular=0;
+				arrowD.setFill(Color.GRAY);
+				break;
+			default:
+				break;
+			}
+		});
+
 	}
 	
 	/******************************************************************************
@@ -127,16 +187,14 @@ public class ControllerNode extends NodeHandle {
 		publisher=new Publisher("/cmd_vel_mux/input/teleop", Twist._TYPE);
 		Subscriber joy_subscriber=new Subscriber("joy", Joy._TYPE);
 		joy_subscriber.addMessageListener((message)->{
-			isJoy=true;
-			setLabel(joy_status, "Not Connected Controller", Color.RED);
+			if(!isJoy) {isJoy=true; setLabel(joy_status, "Connected Controller", Color.LAWNGREEN);}
 			float[] axes=((Joy)message).getAxes();
 			angular=((axes[3]-1)*-1)/2+(axes[4]-1)/2;
 			linear=(axes[1]+axes[5])/2;
 		});
 		Subscriber odom_subscriber=new Subscriber("odom", Odometry._TYPE);
 		odom_subscriber.addMessageListener((message)->{
-			isOdom=true;
-			setLabel(odom_status, "Not received Odometry", Color.RED);
+			if(!isOdom) {isOdom=true; setLabel(odom_status, "Connected Odometry", Color.LAWNGREEN);}
 			Twist twist=((Odometry)message).getTwist().getTwist();
 			odom_angular=twist.getAngular().getZ();
 			odom_linear=twist.getLinear().getX();
@@ -153,6 +211,8 @@ public class ControllerNode extends NodeHandle {
 				if(!isProcess) {
 					isProcess=true;
 					Platform.runLater(()->{
+						linearLabel.setText(linear+" -> "+odom_linear);
+						angularLabel.setText(angular+" -> "+odom_angular);
 						isProcess=false;
 					});
 				}
