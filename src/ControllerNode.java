@@ -35,6 +35,8 @@ public class ControllerNode extends NodeHandle {
 	private boolean isOdom;
 	private boolean isProcess;
 	
+	private Joy joy;
+	
 	Label angularLabel;
 	Label linearLabel;
 	Label joy_status;
@@ -189,9 +191,12 @@ public class ControllerNode extends NodeHandle {
 		Subscriber joy_subscriber=new Subscriber("joy", Joy._TYPE);
 		joy_subscriber.addMessageListener((message)->{
 			if(!isJoy) {isJoy=true; setLabel(joy_status, "Connected Controller", Color.LAWNGREEN);}
+			this.joy=(Joy)message;
 			float[] axes=((Joy)message).getAxes();
 			angular=((axes[3]-1)*-1)/2+(axes[4]-1)/2;
 			linear=(axes[1]+axes[5])/2;
+			if(Math.abs(angular)<0.01) {angular=0;}
+			if(Math.abs(linear)<0.01) {linear=0;}
 		});
 		Subscriber odom_subscriber=new Subscriber("odom", Odometry._TYPE);
 		odom_subscriber.addMessageListener((message)->{
@@ -199,6 +204,8 @@ public class ControllerNode extends NodeHandle {
 			Twist twist=((Odometry)message).getTwist().getTwist();
 			odom_angular=twist.getAngular().getZ();
 			odom_linear=twist.getLinear().getX();
+			if(Math.abs(odom_angular)<0.01) {odom_angular=0;}
+			if(Math.abs(odom_linear)<0.01) {odom_linear=0;}
 		});
 		loop();
 	}
@@ -212,8 +219,26 @@ public class ControllerNode extends NodeHandle {
 				if(!isProcess) {
 					isProcess=true;
 					Platform.runLater(()->{
-						linearLabel.setText(linear+" -> "+odom_linear);
-						angularLabel.setText(angular+" -> "+odom_angular);
+						linearLabel.setText(format(linear)+" -> "+format(odom_linear));
+						angularLabel.setText(format(angular)+" -> "+format(odom_angular));
+						if(isJoy) {
+							arrowW.setFill(Color.GRAY);
+							arrowA.setFill(Color.GRAY);
+							arrowS.setFill(Color.GRAY);
+							arrowD.setFill(Color.GRAY);
+							if(joy.getAxes()[1]>0||joy.getAxes()[5]>0) {
+								arrowW.setFill(Color.RED);
+							}
+							if(joy.getAxes()[1]<0||joy.getAxes()[5]<0) {
+								arrowS.setFill(Color.RED);
+							}
+							if(joy.getAxes()[3]<1) {
+								arrowA.setFill(Color.RED);
+							}
+							if(joy.getAxes()[4]<1) {
+								arrowD.setFill(Color.RED);
+							}
+						}
 						isProcess=false;
 					});
 				}
@@ -227,4 +252,10 @@ public class ControllerNode extends NodeHandle {
 			}
 		}).start();
 	}
+	
+	private String format(Object obj) {
+		return String.format("%.2f", obj);
+	}
+	
+	
 }
