@@ -39,6 +39,7 @@ public class ControllerNode extends NodeHandle {
 	Label linearLabel;
 	Label joy_status;
 	Label odom_status;
+	
 	Polygon arrowW;
 	Polygon arrowA;
 	Polygon arrowS;
